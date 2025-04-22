@@ -3,6 +3,11 @@
 
 #include <QStringList>
 #include <QSet>
+#include <QDir>
+#include <QFile>
+#include <QDebug>
+
+#include "Config.h"
 
 /// represents a reference to any symbol
 class SourceReference {
@@ -62,6 +67,7 @@ inline uint qHash(const Macro &macro, uint seed = 0) {return qHashMulti(seed, ma
 /// represents one var (var, stringvar)
 class Var {
 public:
+    Var() {}
     Var(const QString &name, const QString &sourceFile)
         : name(name), sourceFile(sourceFile) {}
 
@@ -87,12 +93,22 @@ inline uint qHash(const Var &value, uint seed = 0) {return qHashMulti(seed, valu
 
 class Data {
 public:
-    Data();
+    Data(const QString &workingDir, const Config &config);
 
     void createDocumentation();
 
-    QSet<Var> vars, stringVars, consts;
-    QSet<Macro> macros;
+protected:
+    QString createAlphabeticVarlist(const QHash<QString, Var> &vars);
+    QString createAlphabeticConstlist(const QHash<QString, Const> &consts);
+
+public:
+    QHash<QString, Var> vars, stringVars;
+    QHash<QString, Const> consts;
+    QHash<QString, Macro> macros;
+
+private:
+    QString _workingDir;
+    Config _config;
 };
 
 #endif // DATA_H

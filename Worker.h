@@ -9,7 +9,7 @@
 #include <QRegularExpression>
 
 #include "Data.h"
-
+#include "Config.h"
 enum FileType {
     ScriptFile,
     VarlistFile,
@@ -67,7 +67,7 @@ protected:
     void readVarDocs();
 
 private:
-    QSettings _config;
+    Config _config;
 
     QString _workingDir;
     WorkingFiles _workingFiles;

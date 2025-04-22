@@ -21,12 +21,12 @@ void WorkingFiles::printAll() {
 
 
 Worker::Worker(const QString &workingDir) :
-    _config(workingDir), _workingDir(workingDir) {
+    _config(workingDir), _workingDir(workingDir), _data(workingDir, _config) {
 }
 
 void Worker::start() {
     qInfo() << "Working Directory:" << _workingDir;
-    bool recursive = _config.value("recursive", false).toBool();
+    bool recursive = _config.recursive;
     qInfo() << "recursive:" << recursive;
 
     qInfo() << "\r\n\033[1;34mIndexing files...\033[0m";
@@ -36,10 +36,14 @@ void Worker::start() {
     qInfo() << "\r\n\033[1;34mReading varlists...\033[0m";
     readVarlists();
 
+    qInfo() << "\r\n\033[1;34mReading var documentation files...\033[0m";
+    readVarDocs();
+
     qInfo() << "\r\n\033[1;34mReading constfiles...\033[0m";
     readConstFiles();
 
     qInfo() << "\r\n\033[1;34mCreating documentation files...\033[0m";
+
     _data.createDocumentation();
 
     qInfo() << "\033[1;32mFinished!\033[0m";
@@ -105,9 +109,9 @@ void Worker::processVarlist(const QString &fileName, const bool &isStringVarlist
     for(const QString &currentVar : list) {
         Var var(currentVar, fileName);
         if(isStringVarlist)
-            _data.stringVars.insert(var);
+            _data.stringVars.insert(currentVar, var);
         else
-            _data.vars.insert(var);
+            _data.vars.insert(currentVar, var);
     }
 
     f.close();
@@ -121,7 +125,7 @@ void Worker::readConstFiles() {
             continue;
         }
 
-        const QStringList list = QString(f.readAll()).split("\r\n", Qt::SkipEmptyParts);
+        const QStringList list = QString(f.readAll()).split("\r\n");
 
         for(int i = 0; i < list.size(); i++) {
             const QString currentLine = list[i];
@@ -153,7 +157,8 @@ void Worker::readConstFiles() {
             }
 
             Const c(name, value, currentFile);
-            _data.consts.insert(c);
+            c.documentation = documentation;
+            _data.consts.insert(name, c);
         }
 
         f.close();
@@ -162,7 +167,53 @@ void Worker::readConstFiles() {
     qInfo() << "\033[1;32mFound" << _data.consts.size() << " consts.\033[0m";
 }
 
-void Worker::readVarDocs() {}
+
+void Worker::readVarDocs() {
+    for(const QString &currentFile : _workingFiles.varlistDocs) {
+        QFile f(_workingDir + "/" + currentFile);
+        if(!f.open(QFile::ReadOnly)) {
+            qWarning() << "\033[31mCannot read var documentation file:" << currentFile << "Reason:" << f.errorString() << "\033[0m";
+            continue;
+        }
+        f.close();
+
+        QSettings s(f.fileName(), QSettings::IniFormat);
+        s.beginGroup("vars");
+        const QStringList keys = s.allKeys();
+
+        for(const QString &key : keys) {
+            const QString value = s.value(key).toString();
+
+            if(_data.vars.contains(key))
+                _data.vars[key].documentation = value;
+            else {
+                Var var(key, "");
+                var.documentation = value;
+                var.deleted = true;
+                _data.vars.insert(key, var);
+            }
+        }
+        s.endGroup();
+
+        // TODO: Improve
+        s.beginGroup("stringvars");
+        const QStringList stringKeys = s.allKeys();
+
+        for(const QString &key : stringKeys) {
+            const QString value = s.value(key).toString();
+
+            if(_data.stringVars.contains(key))
+                _data.stringVars[key].documentation = value;
+            else {
+                Var var(key, "");
+                var.documentation = value;
+                var.deleted = true;
+                _data.stringVars.insert(key, var);
+            }
+        }
+        s.endGroup();
+    }
+}
 
 WorkingFiles Worker::getFiles(const QString &path, const bool &recursive, WorkingFiles workingFiles) {
     QDir dir(path);
