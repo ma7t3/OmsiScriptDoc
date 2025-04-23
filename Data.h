@@ -79,6 +79,13 @@ public:
     bool deleted = false;
 };
 
+
+/// represents a curve
+class Curve : public Var {
+public:
+    Curve(const QString &name, const QString &sourceFile) : Var(name, sourceFile) {}
+};
+
 /// represents one const
 class Const : public Var {
 public:
@@ -98,12 +105,14 @@ public:
     void createDocumentation();
 
 protected:
-    QString createAlphabeticVarlist(const QHash<QString, Var> &vars);
-    QString createAlphabeticConstlist(const QHash<QString, Const> &consts);
+    static QString createAlphabeticVarlist(const QHash<QString, Var> &vars);
+    static QString createAlphabeticConstlist(const QHash<QString, Const> &consts);
+    static QString createAlphabeticCurvelist(const QHash<QString, Curve> &curves);
 
 public:
     QHash<QString, Var> vars, stringVars;
     QHash<QString, Const> consts;
+    QHash<QString, Curve> curves;
     QHash<QString, Macro> macros;
 
 private:

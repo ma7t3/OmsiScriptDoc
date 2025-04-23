@@ -130,11 +130,11 @@ void Worker::readConstFiles() {
         for(int i = 0; i < list.size(); i++) {
             const QString currentLine = list[i];
 
-            if(currentLine != "[const]")
+            if(currentLine != "[const]" && currentLine != "[newcurve]")
                 continue;
 
             if(i + 2 >= list.size()) {
-                qWarning() << "Invalid const definition. Early end of file:" << currentFile;
+                qWarning() << "Invalid const/curve definition. Early end of file:" << currentFile;
                 continue;
             }
 
@@ -142,7 +142,7 @@ void Worker::readConstFiles() {
             const QString valueStr = list[i + 2];
             bool ok;
             float value = valueStr.toFloat(&ok);
-            if(!ok)
+            if(!ok && currentLine == "[const]")
                 qWarning().noquote() << QString("Invalid const value \"%1\" in file %2 (line %3).").arg(valueStr, currentFile, QString::number(i + 2));
 
             QString documentation;
@@ -150,26 +150,32 @@ void Worker::readConstFiles() {
                 const QString currentLine = list[k];
                 QString cleanLine = currentLine;
                 cleanLine.remove(QRegularExpression("\\s"));
-                if(currentLine == "[const]" || cleanLine.isEmpty())
+                if(currentLine == "[const]" || currentLine == "[newcurve]" || currentLine == "[pnt]" || cleanLine.isEmpty())
                     break;
 
                 documentation = currentLine + "\r\n" + documentation;
             }
 
-            Const c(name, value, currentFile);
-            c.documentation = documentation;
-            _data.consts.insert(name, c);
+            if(currentLine == "[const]") {
+                Const c(name, value, currentFile);
+                c.documentation = documentation;
+                _data.consts.insert(name, c);
+            } else {
+                Curve c(name, currentFile);
+                c.documentation = documentation;
+                _data.curves.insert(name, c);
+            }
         }
 
         f.close();
     }
 
-    qInfo() << "\033[1;32mFound" << _data.consts.size() << " consts.\033[0m";
+    qInfo() << "\033[1;32mFound" << _data.consts.size() << "consts and" << _data.curves.size() << "curves.\033[0m";
 }
 
 
 void Worker::readVarDocs() {
-    for(const QString &currentFile : _workingFiles.varlistDocs) {
+    for(const QString &currentFile : std::as_const(_workingFiles.varlistDocs)) {
         QFile f(_workingDir + "/" + currentFile);
         if(!f.open(QFile::ReadOnly)) {
             qWarning() << "\033[31mCannot read var documentation file:" << currentFile << "Reason:" << f.errorString() << "\033[0m";

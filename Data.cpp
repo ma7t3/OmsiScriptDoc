@@ -22,6 +22,8 @@ void Data::createDocumentation() {
     ${STRINGVARS}
     <h2>Constants</h2>
     ${CONSTS}
+    <h2>Curves</h2>
+    ${CURVES}
 </body>
 </html>
     )HTML";
@@ -39,6 +41,7 @@ void Data::createDocumentation() {
     htmlBase.replace("${VARS}", createAlphabeticVarlist(vars));
     htmlBase.replace("${STRINGVARS}", createAlphabeticVarlist(stringVars));
     htmlBase.replace("${CONSTS}", createAlphabeticConstlist(consts));
+    htmlBase.replace("${CURVES}", createAlphabeticCurvelist(curves));
 
     QDir folder(dir);
     if(!folder.exists())
@@ -83,6 +86,22 @@ QString Data::createAlphabeticConstlist(const QHash<QString, Const> &vars) {
         QString doc = constVal.documentation;
         doc.replace("\r\n", "<br />");
         html += QString("<tr><td>%1</td><td>%2</td><td>%3</td><td>%4</td></tr>").arg(constVal.name).arg(constVal.value).arg(doc).arg(constVal.sourceFile);
+    }
+
+    html += "</table>";
+    return html;
+}
+
+QString Data::createAlphabeticCurvelist(const QHash<QString, Curve> &curves) {
+    QList<Curve> list = curves.values();
+    std::sort(list.begin(), list.end(), [](const Var &a, const Var &b) {return a.name < b.name;});
+
+    QString html = "<table><tr><th>Name</th><th>Description</th><th>File</th></tr>";
+
+    for(const Curve &curveVal : std::as_const(list)) {
+        QString doc = curveVal.documentation;
+        doc.replace("\r\n", "<br />");
+        html += QString("<tr><td>%1</td><td>%2</td><td>%3</td></tr>").arg(curveVal.name, doc, curveVal.sourceFile);
     }
 
     html += "</table>";
