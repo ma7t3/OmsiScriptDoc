@@ -148,10 +148,16 @@ void Worker::readConstFiles() {
 
             QString documentation;
             for(int k = i - 1; k >= 0; k--) {
+                if(k - 2 >= 0) {
+                    const QString lastDef = list[k - 2];
+                    if(lastDef == "[const]" || lastDef == "[newcurve]" || lastDef == "[pnt]")
+                        break;
+                }
+
                 const QString currentLine = list[k];
                 QString cleanLine = currentLine;
                 cleanLine.remove(QRegularExpression("\\s"));
-                if(currentLine == "[const]" || currentLine == "[newcurve]" || currentLine == "[pnt]" || cleanLine.isEmpty())
+                if(cleanLine.isEmpty())
                     break;
 
                 documentation = currentLine + "\r\n" + documentation;
