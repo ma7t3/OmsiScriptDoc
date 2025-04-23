@@ -64,26 +64,27 @@ FileType Worker::fileType(const QString &filePath) {
     static const QStringList stringVarlistParts = {"stringvarlist",
                                                    "stringvarnamelist",
                                                    "stringlist"};
+    static const QStringList varlistParts   = {"varlist", "varnamelist", "varlistfile", "varnamelistfile"};
     static const QStringList constFileParts = {"constfile", "constlist"};
 
-    bool stringVarlist = false, constFile = false;
+    bool stringVarlist = false, varlist = false, constFile = false;
     for (const QString &current : stringVarlistParts)
         stringVarlist |= fileName.contains(current);
 
-    if (!stringVarlist)
-        for (const QString &current : constFileParts)
-            constFile |= fileName.contains(current);
+    for (const QString &current : varlistParts)
+        varlist |= fileName.contains(current);
 
-    FileType type;
+    for (const QString &current : constFileParts)
+        constFile |= fileName.contains(current);
 
-    if (stringVarlist)
-        type = StringVarlistFile;
-    else if (constFile)
-        type = ConstFile;
-    else
-        type = VarlistFile;
+    if(constFile)
+        return ConstFile;
+    if(stringVarlist)
+        return StringVarlistFile;
+    if(varlist)
+        return VarlistFile;
 
-    return type;
+    return InvalidFile;
 }
 
 void Worker::readVarlists() {
